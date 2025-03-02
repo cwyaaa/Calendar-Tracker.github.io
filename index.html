@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .calendar {
+            width: 320px;
+            margin: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .month {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .day {
+            padding: 10px;
+            border-radius: 5px;
+            background: #e0e0e0;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .day:hover {
+            background: #d4d4d4;
+        }
+
+        .today {
+            background: #ffcc00 !important;
+            font-weight: bold;
+        }
+
+        .event {
+            background: #4caf50 !important;
+            color: white;
+        }
+
+        .event-marker {
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            width: 6px;
+            height: 6px;
+            background: red;
+            border-radius: 50%;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal input {
+            width: 90%;
+            padding: 5px;
+            margin: 5px 0;
+        }
+
+        .modal button {
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calendar Tracker</h1>
+    <div class="calendar">
+        <div class="month" id="month"></div>
+        <div class="days" id="days"></div>
+    </div>
+
+    <!-- 事件输入弹窗 -->
+    <div class="modal" id="eventModal">
+        <h3 id="modalDate"></h3>
+        <input type="text" id="eventInput" placeholder="输入事件...">
+        <button onclick="saveEvent()">保存</button>
+        <button onclick="closeModal()">取消</button>
+    </div>
+
+    <script>
+        const daysContainer = document.getElementById("days");
+        const monthContainer = document.getElementById("month");
+        const eventModal = document.getElementById("eventModal");
+        const eventInput = document.getElementById("eventInput");
+        const modalDate = document.getElementById("modalDate");
+
+        const today = new Date();
+        let selectedDate = null;
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const lastDate = new Date(year, month + 1, 0).getDate();
+
+        const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+        monthContainer.innerText = `${monthNames[month]} ${year}`;
+
+        function getSavedEvents() {
+            return JSON.parse(localStorage.getItem("calendarEvents")) || {};
+        }
+
+        function saveEvent() {
+            if (!selectedDate) return;
+
+            let events = getSavedEvents();
+            if (eventInput.value.trim()) {
+                events[selectedDate] = eventInput.value.trim();
+            } else {
+                delete events[selectedDate]; // 如果为空，则删除事件
+            }
+
+            localStorage.setItem("calendarEvents", JSON.stringify(events));
+            closeModal();
+            createCalendar(); // 重新渲染日历
+        }
+
+        function openModal(date) {
+            selectedDate = `${year}-${month + 1}-${date}`;
+            modalDate.innerText = `事件：${selectedDate}`;
+            eventInput.value = getSavedEvents()[selectedDate] || "";
+            eventModal.style.display = "block";
+        }
+
+        function closeModal() {
+            eventModal.style.display = "none";
+            selectedDate = null;
+        }
+
+        function createCalendar() {
+            daysContainer.innerHTML = "";
+            let savedEvents = getSavedEvents();
+
+            // 填充空白
+            for (let i = 0; i < firstDay; i++) {
+                let emptyCell = document.createElement("div");
+                daysContainer.appendChild(emptyCell);
+            }
+
+            // 生成日历
+            for (let day = 1; day <= lastDate; day++) {
+                let dayCell = document.createElement("div");
+                dayCell.classList.add("day");
+                dayCell.innerText = day;
+
+                if (day === today.getDate()) {
+                    dayCell.classList.add("today");
+                }
+
+                if (savedEvents[`${year}-${month + 1}-${day}`]) {
+                    dayCell.classList.add("event");
+                    let marker = document.createElement("div");
+                    marker.classList.add("event-marker");
+                    dayCell.appendChild(marker);
+                }
+
+                dayCell.addEventListener("click", function() {
+                    openModal(day);
+                });
+
+                daysContainer.appendChild(dayCell);
+            }
+        }
+
+        createCalendar();
+    </script>
+</body>
+</html>
